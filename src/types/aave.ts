@@ -124,6 +124,7 @@ export interface AaveAddresses {
   priceOracle: string;
   ghoToken?: string;
   stkAAVE?: string;
+  stkGHO?: string;
   poolAddressesProvider?: string;
   wrappedTokenGateway?: string;
 }
