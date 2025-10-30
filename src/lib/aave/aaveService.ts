@@ -10,7 +10,7 @@ import type {
   UserPosition,
   FormattedUserSummary,
   GHOData,
-  StakingData,
+  SavingsStakingData,
 } from '@/types/aave';
 import {
   getAaveAddresses,
@@ -211,10 +211,11 @@ export class AaveService {
         balanceUSD: formatUSD(parseFloat(formatTokenAmount(balance.toString(), decimals))),
         borrowed: ghoBorrow?.balance || '0',
         borrowedUSD: ghoBorrow?.balanceUSD || '0',
-        stakingBalance: formatTokenAmount(stkGHOBalance, decimals),
-        stakingBalanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, decimals))),
+        savingsBalance: formatTokenAmount(stkGHOBalance, decimals),
+        savingsBalanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, decimals))),
         borrowAPY: ghoBorrow?.apy || '0',
         supplyAPY: '0', // GHO typically doesn't earn supply APY
+        savingsAPY: '0', // TODO: Fetch actual sGHO APY
       };
     } catch (error) {
       console.error('Error fetching GHO data:', error);
@@ -225,7 +226,7 @@ export class AaveService {
   /**
    * Get staking data (stkAAVE and stkGHO)
    */
-  async getStakingData(userAddress: string): Promise<StakingData> {
+  async getStakingData(userAddress: string): Promise<SavingsStakingData> {
     try {
       const addresses = getAaveAddresses(this.chainId);
       
@@ -263,7 +264,7 @@ export class AaveService {
           balanceUSD: '0', // Would need AAVE price to calculate
           apy: stkAAVEAPY,
         },
-        stkGHO: {
+        sGHO: {
           balance: formatTokenAmount(stkGHOBalance, 18),
           balanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, 18))),
           apy: stkGHOAPY,
@@ -273,7 +274,7 @@ export class AaveService {
       console.error('Error fetching staking data:', error);
       return {
         stkAAVE: { balance: '0', balanceUSD: '$0', apy: '0' },
-        stkGHO: { balance: '0', balanceUSD: '$0', apy: '0' },
+        sGHO: { balance: '0', balanceUSD: '$0', apy: '0' },
       };
     }
   }
@@ -310,7 +311,16 @@ export class AaveService {
         userEmodeCategoryId: userReserves.userEmodeCategoryId,
       });
 
-      return userSummary as FormattedUserSummary;
+      return {
+        totalLiquidityUSD: userSummary.totalLiquidityUSD,
+        totalCollateralUSD: userSummary.totalCollateralUSD,
+        totalBorrowsUSD: userSummary.totalBorrowsUSD,
+        availableBorrowsUSD: userSummary.availableBorrowsUSD,
+        currentLiquidationThreshold: userSummary.currentLiquidationThreshold,
+        ltv: userSummary.currentLoanToValue,
+        healthFactor: userSummary.healthFactor,
+        netAPY: 0, // TODO: Calculate net APY from supply and borrow positions
+      };
     } catch (error) {
       console.error('Error fetching user summary:', error);
       return null;

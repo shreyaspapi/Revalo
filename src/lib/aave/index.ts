@@ -23,7 +23,7 @@ export {
 } from './config';
 
 // Subgraph Configuration
-export { AAVE_SUBGRAPH_URLS, getSubgraphUrl, QUERIES, FRAGMENTS } from './subgraphConfig';
+export { AAVE_SUBGRAPH_URLS, getSubgraphUrl, QUERIES } from './subgraphConfig';
 
 // Utilities
 export {
