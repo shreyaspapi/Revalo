@@ -181,3 +181,151 @@ export function estimateAnnualEarnings(
   return totalValue * (apy / 100);
 }
 
+/**
+ * Format health factor with appropriate precision
+ * Returns "N/A" for null/infinite health factors
+ */
+export function formatHealthFactor(healthFactor: string | null | undefined): string {
+  if (!healthFactor || healthFactor === 'null' || healthFactor === 'N/A') {
+    return 'N/A';
+  }
+  
+  try {
+    const hf = parseFloat(healthFactor);
+    
+    // Check for infinity or very large numbers
+    if (!isFinite(hf) || hf > 1000000) {
+      return '∞';
+    }
+    
+    // Format with 2 decimal places
+    if (hf >= 100) {
+      return hf.toFixed(0); // No decimals for large numbers
+    } else if (hf >= 10) {
+      return hf.toFixed(1); // 1 decimal for medium numbers
+    } else {
+      return hf.toFixed(2); // 2 decimals for small numbers
+    }
+  } catch (error) {
+    console.error('Error formatting health factor:', error);
+    return 'N/A';
+  }
+}
+
+/**
+ * Format token balance with smart precision
+ * Shows more decimals for small amounts, fewer for large amounts
+ */
+export function formatBalance(
+  balance: string | number,
+  options?: {
+    maxDecimals?: number;
+    minDecimals?: number;
+    compact?: boolean;
+  }
+): string {
+  const {
+    maxDecimals = 4,
+    minDecimals = 2,
+    compact = false,
+  } = options || {};
+  
+  try {
+    const num = typeof balance === 'string' ? parseFloat(balance) : balance;
+    
+    if (num === 0) return '0';
+    if (!isFinite(num)) return '0';
+    
+    // For very small numbers
+    if (Math.abs(num) < 0.0001) {
+      return num.toExponential(2);
+    }
+    
+    // For small numbers, show more decimals
+    if (Math.abs(num) < 1) {
+      return num.toFixed(Math.min(6, maxDecimals));
+    }
+    
+    // Use compact notation for large numbers
+    if (compact && Math.abs(num) >= 10000) {
+      return new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 2,
+      }).format(num);
+    }
+    
+    // Standard formatting
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: minDecimals,
+      maximumFractionDigits: maxDecimals,
+    });
+  } catch (error) {
+    console.error('Error formatting balance:', error);
+    return '0';
+  }
+}
+
+/**
+ * Format large USD amounts with smart precision and compact notation
+ */
+export function formatLargeUSD(
+  amount: string | number,
+  options?: {
+    compact?: boolean;
+    maxDecimals?: number;
+  }
+): string {
+  const { compact = true, maxDecimals = 2 } = options || {};
+  
+  try {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    if (num === 0) return '$0.00';
+    if (!isFinite(num)) return '$0.00';
+    
+    // For amounts over 10K, use compact notation by default
+    if (compact && Math.abs(num) >= 10000) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 2,
+      }).format(num);
+    }
+    
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: maxDecimals,
+    }).format(num);
+  } catch (error) {
+    console.error('Error formatting large USD:', error);
+    return '$0.00';
+  }
+}
+
+/**
+ * Format percentage with appropriate precision
+ */
+export function formatPercentage(
+  value: string | number,
+  maxDecimals: number = 2
+): string {
+  try {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    
+    if (!isFinite(num) || num === 0) return '0%';
+    
+    // For very small percentages
+    if (Math.abs(num) < 0.01) {
+      return '<0.01%';
+    }
+    
+    return `${num.toFixed(maxDecimals)}%`;
+  } catch (error) {
+    console.error('Error formatting percentage:', error);
+    return '0%';
+  }
+}
+

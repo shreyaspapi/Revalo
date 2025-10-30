@@ -3,14 +3,17 @@
 import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { mainnet, polygon, arbitrum, optimism, base, gnosis } from 'wagmi/chains';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 
+// Initialize config immediately at module load time
+// This ensures it's created only once, even with React Strict Mode
+// Note: Only mainnet chains are supported by Aave's official API
 const config = getDefaultConfig({
   appName: 'Revalo',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
-  chains: [mainnet, sepolia],
+  chains: [mainnet, polygon, arbitrum, optimism, base, gnosis],
   ssr: true,
 });
 
@@ -25,18 +28,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export function Web3Provider({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Only render Web3 providers on client side to avoid SSR issues
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+export function Web3Provider({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

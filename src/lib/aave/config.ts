@@ -12,15 +12,17 @@ export const AAVE_ADDRESSES: Record<number, AaveAddresses> = {
     protocolDataProvider: '0x7B4EB56E7CD4b454BA8ff71E4518426369a138a3',
     priceOracle: '0x54586bE62E3c3580375aE3723C145253060Ca0C2',
     ghoToken: '0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f',
-    stkGHO: '0x1a88Df1cFe15Af22B3c4c783D4e6F7F9e0C1885d',
     stkAAVE: '0x4da27a545c0c5B758a6BA100e3a049001de870f5',
   },
-  // Sepolia Testnet
+  // Sepolia Testnet V3
+  // Official addresses from: https://docs.aave.com/developers/deployed-contracts/v3-testnet-addresses
   [ChainId.sepolia]: {
-    lendingPool: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
-    protocolDataProvider: '0x3e9708d80f7B3e43118013075F7e95CE3AB31F31',
-    priceOracle: '0x2da88497588bf89281816106C7259e31AF45a663',
-    ghoToken: '0xc4bF5CbDaBE595361438F8c6a187bDc330539c60',
+    lendingPool: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951', // Pool
+    protocolDataProvider: '0x3e9708d80f7B3e43118013075F7e95CE3AB31F31', // AaveProtocolDataProvider  
+    priceOracle: '0x2da88497588bf89281816106C7259e31AF45a663', // AaveOracle
+    ghoToken: '0xc4bF5CbDaBE595361438F8c6a187bDc330539c60', // GHO Token
+    poolAddressesProvider: '0x012bAC54348C0E635dCAc9D5FB99f06F24136C9A', // PoolAddressesProvider
+    wrappedTokenGateway: '0x387d311e47e80b498169e6fb51d3193167d89F7D', // WrappedTokenGateway
   },
 };
 

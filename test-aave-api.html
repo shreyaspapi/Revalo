@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aave GraphQL API Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 {
+            color: #b6509e;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #444;
+        }
+        button {
+            background: #b6509e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #9a3d85;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .loading {
+            color: #ff9800;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Aave GraphQL API Tester</h1>
+    
+    <div class="test-section">
+        <h2>Configuration</h2>
+        <label>Market Address (Pool):</label>
+        <input type="text" id="marketAddress" value="0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2" placeholder="0x...">
+        
+        <label>Chain ID:</label>
+        <input type="number" id="chainId" value="1" placeholder="1">
+        
+        <label>User Address:</label>
+        <input type="text" id="userAddress" value="0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c" placeholder="0x...">
+    </div>
+
+    <div class="test-section">
+        <h2>Tests</h2>
+        <button onclick="testChains()">1. Test Chains</button>
+        <button onclick="testUserSupplies()">2. Test User Supplies</button>
+        <button onclick="testUserBorrows()">3. Test User Borrows</button>
+        <button onclick="testAccountSummary()">4. Test Account Summary</button>
+        <button onclick="testIntrospection()">5. Get Schema (Introspection)</button>
+        <button onclick="runAllTests()" style="background: #2196f3;">▶ Run All Tests</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const AAVE_API = 'https://api.v3.aave.com/graphql';
+
+        async function queryGraphQL(query, variables) {
+            const response = await fetch(AAVE_API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query, variables }),
+            });
+            return await response.json();
+        }
+
+        function getConfig() {
+            return {
+                marketAddress: document.getElementById('marketAddress').value,
+                chainId: parseInt(document.getElementById('chainId').value),
+                userAddress: document.getElementById('userAddress').value,
+            };
+        }
+
+        function addResult(title, status, data) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.style.marginBottom = '20px';
+            
+            const statusClass = status === 'success' ? 'success' : status === 'error' ? 'error' : 'loading';
+            const icon = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
+            
+            div.innerHTML = `
+                <h3 class="${statusClass}">${icon} ${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        async function testChains() {
+            const query = `
+                query Chains {
+                    chains {
+                        name
+                        chainId
+                        icon
+                    }
+                }
+            `;
+            
+            addResult('Test 1: Chains', 'loading', 'Loading...');
+            try {
+                const result = await queryGraphQL(query, {});
+                if (result.errors) {
+                    addResult('Test 1: Chains', 'error', result.errors);
+                } else {
+                    addResult('Test 1: Chains', 'success', result.data);
+                }
+            } catch (error) {
+                addResult('Test 1: Chains', 'error', { message: error.message });
+            }
+        }
+
+        async function testUserSupplies() {
+            const query = `
+                query GetUserSupplies($marketAddress: EvmAddress!, $chainId: ChainId!, $userAddress: EvmAddress!) {
+                    userSupplies(
+                        request: {
+                            markets: [{ address: $marketAddress, chainId: $chainId }]
+                            user: $userAddress
+                        }
+                    ) {
+                        currency { symbol name address decimals }
+                        balance {
+                            amount { value decimals }
+                            usd
+                        }
+                        apy { formatted }
+                        isCollateral
+                    }
+                }
+            `;
+            
+            addResult('Test 2: User Supplies', 'loading', 'Loading...');
+            try {
+                const result = await queryGraphQL(query, getConfig());
+                if (result.errors) {
+                    addResult('Test 2: User Supplies', 'error', result.errors);
+                } else {
+                    addResult('Test 2: User Supplies', 'success', result.data);
+                }
+            } catch (error) {
+                addResult('Test 2: User Supplies', 'error', { message: error.message });
+            }
+        }
+
+        async function testUserBorrows() {
+            const query = `
+                query GetUserBorrows($marketAddress: EvmAddress!, $chainId: ChainId!, $userAddress: EvmAddress!) {
+                    userBorrows(
+                        request: {
+                            markets: [{ address: $marketAddress, chainId: $chainId }]
+                            user: $userAddress
+                        }
+                    ) {
+                        currency { symbol name address decimals }
+                        balance {
+                            amount { value decimals }
+                            usd
+                        }
+                        apy { formatted }
+                    }
+                }
+            `;
+            
+            addResult('Test 3: User Borrows', 'loading', 'Loading...');
+            try {
+                const result = await queryGraphQL(query, getConfig());
+                if (result.errors) {
+                    addResult('Test 3: User Borrows', 'error', result.errors);
+                } else {
+                    addResult('Test 3: User Borrows', 'success', result.data);
+                }
+            } catch (error) {
+                addResult('Test 3: User Borrows', 'error', { message: error.message });
+            }
+        }
+
+        async function testAccountSummary() {
+            const query = `
+                query GetUserAccountSummary($marketAddress: EvmAddress!, $chainId: ChainId!, $userAddress: EvmAddress!) {
+                    userAccountSummary(
+                        request: {
+                            markets: [{ address: $marketAddress, chainId: $chainId }]
+                            user: $userAddress
+                        }
+                    ) {
+                        totalCollateralUsd
+                        totalBorrowsUsd
+                        availableBorrowsUsd
+                        currentLiquidationThreshold
+                        ltv
+                        healthFactor
+                    }
+                }
+            `;
+            
+            addResult('Test 4: Account Summary', 'loading', 'Loading...');
+            try {
+                const result = await queryGraphQL(query, getConfig());
+                if (result.errors) {
+                    addResult('Test 4: Account Summary', 'error', result.errors);
+                } else {
+                    addResult('Test 4: Account Summary', 'success', result.data);
+                }
+            } catch (error) {
+                addResult('Test 4: Account Summary', 'error', { message: error.message });
+            }
+        }
+
+        async function testIntrospection() {
+            const query = `
+                query IntrospectionQuery {
+                    __type(name: "MarketUserReserveBorrowPosition") {
+                        name
+                        fields {
+                            name
+                            type {
+                                name
+                                kind
+                                ofType { name kind }
+                            }
+                        }
+                    }
+                }
+            `;
+            
+            addResult('Test 5: Introspection', 'loading', 'Loading...');
+            try {
+                const result = await queryGraphQL(query, {});
+                if (result.errors) {
+                    addResult('Test 5: Introspection', 'error', result.errors);
+                } else {
+                    addResult('Test 5: Introspection - Borrow Schema', 'success', result.data);
+                }
+            } catch (error) {
+                addResult('Test 5: Introspection', 'error', { message: error.message });
+            }
+        }
+
+        async function runAllTests() {
+            document.getElementById('results').innerHTML = '';
+            await testChains();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testUserSupplies();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testUserBorrows();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testAccountSummary();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testIntrospection();
+        }
+    </script>
+</body>
+</html>
+

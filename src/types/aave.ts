@@ -82,22 +82,23 @@ export interface GHOData {
   balanceUSD: string;
   borrowed: string;
   borrowedUSD: string;
-  stakingBalance: string;
-  stakingBalanceUSD: string;
+  savingsBalance: string;      // sGHO (Savings GHO) balance
+  savingsBalanceUSD: string;   // sGHO balance in USD
   borrowAPY: string;
   supplyAPY: string;
+  savingsAPY: string;          // APY earned from sGHO (Savings GHO)
 }
 
 /**
- * Staking data for stkAAVE and stkGHO
+ * Savings and Staking data
  */
-export interface StakingData {
+export interface SavingsStakingData {
   stkAAVE: {
     balance: string;
     balanceUSD: string;
     apy: string;
   };
-  stkGHO: {
+  sGHO: {
     balance: string;
     balanceUSD: string;
     apy: string;
@@ -122,7 +123,8 @@ export interface AaveAddresses {
   protocolDataProvider: string;
   priceOracle: string;
   ghoToken?: string;
-  stkGHO?: string;
   stkAAVE?: string;
+  poolAddressesProvider?: string;
+  wrappedTokenGateway?: string;
 }
 

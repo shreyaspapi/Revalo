@@ -66,104 +66,133 @@ export function PositionCards() {
   const { data: stakingData, isLoading: stakingLoading } = useStakingData();
   const { data: ghoData, isLoading: ghoLoading } = useGHOData();
 
-  // If wallet not connected, show placeholder
+  // If wallet not connected, show message
   if (!isConnected) {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <PositionCard
           title="TOTAL SUPPLIED"
-          value="0"
-          subtitle="Connect wallet to view"
+          value="N/A"
+          subtitle="Connect wallet to view data"
           icon="wallet"
-          dollarValue="$0.00"
+          dollarValue="N/A"
         />
         <PositionCard
-          title="TOTAL BORROWED"
-          value="0"
-          subtitle="Connect wallet to view"
+          title="GHO BORROWED"
+          value="N/A"
+          subtitle="Connect wallet to view data"
           icon="trending"
-          dollarValue="$0.00"
+          dollarValue="N/A"
         />
         <PositionCard
-          title="STKGHO"
-          value="0"
-          subtitle="Connect wallet to view"
+          title="SAVINGS GHO"
+          value="N/A"
+          subtitle="Connect wallet to view data"
           icon="link"
-          dollarValue="$0.00"
+          dollarValue="N/A"
+        />
+      </div>
+    );
+  }
+
+  // Handle errors - show error message instead of data
+  if (portfolio === null && !portfolioLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <PositionCard
+          title="ERROR"
+          value="N/A"
+          subtitle="Unable to fetch data"
+          icon="wallet"
+          dollarValue="N/A"
+        />
+        <PositionCard
+          title="ERROR"
+          value="N/A"
+          subtitle="Unable to fetch data"
+          icon="trending"
+          dollarValue="N/A"
+        />
+        <PositionCard
+          title="ERROR"
+          value="N/A"
+          subtitle="Unable to fetch data"
+          icon="link"
+          dollarValue="N/A"
         />
       </div>
     );
   }
 
   // Calculate total supplied
-  const totalSupplied = portfolio?.totalSupplyUSD || 0;
-  const totalSuppliedStr = totalSupplied > 0 
+  const totalSupplied = portfolio?.totalSupplyUSD ?? null;
+  const totalSuppliedStr = totalSupplied !== null && totalSupplied > 0 
     ? totalSupplied.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : '0';
+    : totalSupplied === 0 ? '0' : 'N/A';
 
   // Calculate total borrowed
-  const totalBorrowed = portfolio?.totalBorrowUSD || 0;
-  const totalBorrowedStr = totalBorrowed > 0
+  const totalBorrowed = portfolio?.totalBorrowUSD ?? null;
+  const totalBorrowedStr = totalBorrowed !== null && totalBorrowed > 0
     ? totalBorrowed.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : '0';
+    : totalBorrowed === 0 ? '0' : 'N/A';
 
   // Get GHO borrowed amount
   const ghoBorrowed = portfolio?.borrows.find(b => b.symbol === 'GHO');
-  const ghoBorrowedAmount = ghoBorrowed?.balance || '0';
-  const ghoBorrowedValue = ghoBorrowed?.balanceUSD || '0';
-  const ghoBorrowedAPY = ghoBorrowed?.apy || '0';
+  const ghoBorrowedAmount = ghoBorrowed?.balance || (portfolio ? '0' : 'N/A');
+  const ghoBorrowedValue = ghoBorrowed?.balanceUSD || (portfolio ? '0' : 'N/A');
+  const ghoBorrowedAPY = ghoBorrowed?.apy || (portfolio ? '0' : 'N/A');
 
-  // Get stkGHO balance
-  const stkGHOBalance = stakingData?.stkGHO.balance || '0';
-  const stkGHOValue = stakingData?.stkGHO.balanceUSD || '$0.00';
-  const stkGHOAPY = stakingData?.stkGHO.apy || '0';
+  // Get sGHO (Savings GHO) balance - comes from ghoData now
+  const sGHOBalance = ghoData?.savingsBalance || (ghoData ? '0' : 'N/A');
+  const sGHOValue = ghoData?.savingsBalanceUSD || (ghoData ? '0' : 'N/A');
+  const sGHOAPY = ghoData?.savingsAPY || (ghoData ? 'N/A' : 'N/A');
 
   // Calculate average supply APY
-  const avgSupplyAPY = portfolio && portfolio.supplies.length > 0
+  const avgSupplyAPY = portfolio && portfolio.supplies.length > 0 && totalSupplied && totalSupplied > 0
     ? (portfolio.supplies.reduce((sum, supply) => {
         const balanceUSD = parseFloat(supply.balanceUSD);
         const apy = parseFloat(supply.apy);
         return sum + (balanceUSD * apy);
       }, 0) / totalSupplied).toFixed(2)
-    : '0';
+    : portfolio && totalSupplied === 0 ? '0' : 'N/A';
 
   // Calculate average borrow APY
-  const avgBorrowAPY = portfolio && portfolio.borrows.length > 0
+  const avgBorrowAPY = portfolio && portfolio.borrows.length > 0 && totalBorrowed && totalBorrowed > 0
     ? (portfolio.borrows.reduce((sum, borrow) => {
         const balanceUSD = parseFloat(borrow.balanceUSD);
         const apy = parseFloat(borrow.apy);
         return sum + (balanceUSD * apy);
       }, 0) / totalBorrowed).toFixed(2)
-    : '0';
+    : portfolio && totalBorrowed === 0 ? '0' : 'N/A';
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <PositionCard
         title="TOTAL SUPPLIED"
         value={totalSuppliedStr}
-        subtitle={`${portfolio?.supplies.length || 0} asset${portfolio?.supplies.length !== 1 ? 's' : ''} supplied`}
+        subtitle={portfolio ? `${portfolio.supplies.length} asset${portfolio.supplies.length !== 1 ? 's' : ''} supplied` : 'No data available'}
         icon="wallet"
-        dollarValue={formatUSD(totalSupplied)}
+        dollarValue={totalSupplied !== null ? formatUSD(totalSupplied) : 'N/A'}
         apy={avgSupplyAPY}
         isLoading={portfolioLoading}
       />
       <PositionCard
         title="GHO BORROWED"
-        value={ghoBorrowedAmount}
-        subtitle="GHO tokens"
+        value={ghoBorrowedAmount === 'N/A' ? 'N/A' : parseFloat(ghoBorrowedAmount).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        subtitle={portfolio ? 'GHO tokens' : 'No data available'}
         icon="trending"
-        dollarValue={formatUSD(parseFloat(ghoBorrowedValue))}
+        dollarValue={ghoBorrowedValue === 'N/A' ? 'N/A' : formatUSD(parseFloat(ghoBorrowedValue))}
         apy={ghoBorrowedAPY}
         isLoading={portfolioLoading || ghoLoading}
       />
       <PositionCard
-        title="STKGHO"
-        value={stkGHOBalance}
-        subtitle="stkGHO tokens"
+        title="SAVINGS GHO"
+        value={sGHOBalance === 'N/A' ? 'N/A' : parseFloat(sGHOBalance).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        subtitle={ghoData ? 'sGHO tokens' : 'No data available'}
         icon="link"
-        dollarValue={stkGHOValue}
-        apy={stkGHOAPY}
-        isLoading={stakingLoading}
+        dollarValue={sGHOValue === 'N/A' ? 'N/A' : formatUSD(parseFloat(sGHOValue))}
+        apy={sGHOAPY}
+        isLoading={ghoLoading}
       />
     </div>
   );
