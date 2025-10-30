@@ -178,7 +178,13 @@ export function PositionCards() {
       />
       <PositionCard
         title="GHO BORROWED"
-        value={ghoBorrowedAmount === 'N/A' ? 'N/A' : parseFloat(ghoBorrowedAmount).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        value={
+          ghoBorrowedAmount === 'N/A'
+            ? 'N/A'
+            : Number(ghoBorrowedAmount.replace(/,/g, '')).toLocaleString('en-US', {
+                maximumFractionDigits: 2,
+              })
+        }
         subtitle={portfolio ? 'GHO tokens' : 'No data available'}
         icon="trending"
         dollarValue={ghoBorrowedValue === 'N/A' ? 'N/A' : formatUSD(parseFloat(ghoBorrowedValue))}
@@ -187,7 +193,13 @@ export function PositionCards() {
       />
       <PositionCard
         title="SAVINGS GHO"
-        value={sGHOBalance === 'N/A' ? 'N/A' : parseFloat(sGHOBalance).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+        value={
+          sGHOBalance === 'N/A'
+            ? 'N/A'
+            : Number(sGHOBalance.replace(/,/g, '')).toLocaleString('en-US', {
+                maximumFractionDigits: 2,
+              })
+        }
         subtitle={ghoData ? 'sGHO tokens' : 'No data available'}
         icon="link"
         dollarValue={sGHOValue === 'N/A' ? 'N/A' : formatUSD(parseFloat(sGHOValue))}
