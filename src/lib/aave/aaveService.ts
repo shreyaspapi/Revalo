@@ -18,6 +18,7 @@ import {
   MARKET_REFERENCE_CURRENCY_DECIMALS,
 } from './config';
 import { formatTokenAmount, formatUSD, rayToPercent } from './utils';
+import { getSavingsGhoBalance } from './sGhoService';
 
 // ERC20 ABI for token balance queries
 const ERC20_ABI = [
@@ -195,27 +196,19 @@ export class AaveService {
         (b) => b.symbol === 'GHO'
       );
 
-      // Get stkGHO balance if available
-      let stkGHOBalance = '0';
-      if (addresses.stkGHO) {
-        const stkGHOContract = new ethers.Contract(
-          addresses.stkGHO,
-          ERC20_ABI,
-          this.provider
-        );
-        stkGHOBalance = await stkGHOContract.balanceOf(userAddress);
-      }
+      // Get sGHO balance from GraphQL API
+      const sGhoData = await getSavingsGhoBalance(userAddress);
 
       return {
         balance: formatTokenAmount(balance.toString(), decimals),
         balanceUSD: formatUSD(parseFloat(formatTokenAmount(balance.toString(), decimals))),
         borrowed: ghoBorrow?.balance || '0',
         borrowedUSD: ghoBorrow?.balanceUSD || '0',
-        savingsBalance: formatTokenAmount(stkGHOBalance, decimals),
-        savingsBalanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, decimals))),
+        savingsBalance: sGhoData.balance,
+        savingsBalanceUSD: formatUSD(parseFloat(sGhoData.balanceUSD)),
         borrowAPY: ghoBorrow?.apy || '0',
         supplyAPY: '0', // GHO typically doesn't earn supply APY
-        savingsAPY: '0', // TODO: Fetch actual sGHO APY
+        savingsAPY: sGhoData.apy,
       };
     } catch (error) {
       console.error('Error fetching GHO data:', error);
@@ -224,14 +217,13 @@ export class AaveService {
   }
 
   /**
-   * Get staking data (stkAAVE and stkGHO)
+   * Get staking data (stkAAVE and sGHO)
    */
   async getStakingData(userAddress: string): Promise<SavingsStakingData> {
     try {
       const addresses = getAaveAddresses(this.chainId);
       
       let stkAAVEBalance = '0';
-      let stkGHOBalance = '0';
 
       // Get stkAAVE balance
       if (addresses.stkAAVE) {
@@ -240,23 +232,15 @@ export class AaveService {
           ERC20_ABI,
           this.provider
         );
-        stkAAVEBalance = await stkAAVEContract.balanceOf(userAddress);
+        const balance = await stkAAVEContract.balanceOf(userAddress);
+        stkAAVEBalance = balance.toString();
       }
 
-      // Get stkGHO balance
-      if (addresses.stkGHO) {
-        const stkGHOContract = new ethers.Contract(
-          addresses.stkGHO,
-          ERC20_ABI,
-          this.provider
-        );
-        stkGHOBalance = await stkGHOContract.balanceOf(userAddress);
-      }
+      // Get sGHO balance from GraphQL API
+      const sGhoData = await getSavingsGhoBalance(userAddress);
 
-      // For demo, using approximate APY values
-      // In production, fetch these from the protocol
-      const stkAAVEAPY = '7.5';
-      const stkGHOAPY = '3.2';
+      // APY for stkAAVE (would need to fetch from protocol)
+      const stkAAVEAPY = 'N/A';
 
       return {
         stkAAVE: {
@@ -265,16 +249,16 @@ export class AaveService {
           apy: stkAAVEAPY,
         },
         sGHO: {
-          balance: formatTokenAmount(stkGHOBalance, 18),
-          balanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, 18))),
-          apy: stkGHOAPY,
+          balance: sGhoData.balance,
+          balanceUSD: formatUSD(parseFloat(sGhoData.balanceUSD)),
+          apy: sGhoData.apy,
         },
       };
     } catch (error) {
       console.error('Error fetching staking data:', error);
       return {
-        stkAAVE: { balance: '0', balanceUSD: '$0', apy: '0' },
-        sGHO: { balance: '0', balanceUSD: '$0', apy: '0' },
+        stkAAVE: { balance: '0', balanceUSD: '$0', apy: 'N/A' },
+        sGHO: { balance: '0', balanceUSD: '$0', apy: 'N/A' },
       };
     }
   }

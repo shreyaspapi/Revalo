@@ -7,6 +7,10 @@
 // Services
 export { AaveService } from './aaveService';
 export { AaveSubgraphService } from './subgraphService';
+export { getSavingsGhoBalance, getClaimableMeritRewards, getEstimatedSGhoAPY, fetchSGhoAPY } from './sGhoService';
+
+// sGHO Configuration
+export { SGHO_APY, getSGhoAPY, SGHO_CONTRACT_ADDRESS, SGHO_CONFIG_INFO } from './sGhoConfig';
 
 // Configuration
 export {
