@@ -222,6 +222,48 @@ export const QUERIES = {
       }
     }
   `,
+
+  /**
+   * Get sGHO (Savings GHO) yield rate
+   * Returns the APY for sGHO - an annualized rate derived from weekly distribution
+   * Rewards accrue continuously but are claimable after each round
+   */
+  getSavingsGhoYieldRate: `
+    query GetSavingsGhoYieldRate($chainId: ChainId!) {
+      savingsGhoYieldRate(
+        request: { chainId: $chainId }
+      ) {
+        raw
+        decimals
+        value
+        formatted
+      }
+    }
+  `,
+
+  /**
+   * Get user's Merit rewards (claimable rewards from sGHO)
+   * Optional: Use this to check claimable rewards
+   */
+  getUserMeritRewards: `
+    query GetUserMeritRewards($userAddress: EvmAddress!, $chainId: ChainId!) {
+      userMeritRewards(
+        request: { 
+          user: $userAddress
+          chainId: $chainId
+        }
+      ) {
+        claimableRewards {
+          amount {
+            raw
+            value
+            decimals
+          }
+          usd
+        }
+      }
+    }
+  `,
 };
 
 

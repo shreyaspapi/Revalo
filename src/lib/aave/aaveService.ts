@@ -215,7 +215,7 @@ export class AaveService {
         savingsBalanceUSD: formatUSD(parseFloat(formatTokenAmount(stkGHOBalance, decimals))),
         borrowAPY: ghoBorrow?.apy || '0',
         supplyAPY: '0', // GHO typically doesn't earn supply APY
-        savingsAPY: '0', // TODO: Fetch actual sGHO APY
+        savingsAPY: '0', // NOTE: For sGHO APY, use AaveSubgraphService which properly fetches it from the Aave API
       };
     } catch (error) {
       console.error('Error fetching GHO data:', error);

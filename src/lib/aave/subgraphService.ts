@@ -293,36 +293,94 @@ export class AaveSubgraphService {
   }
 
   /**
-   * Fetch sGHO APY from Merit/ASR
+   * Fetch sGHO APY from Aave API
    * 
-   * NOTE: The sGHO APY (currently ~7.18%) is NOT available in the Aave GraphQL API.
-   * It comes from the Merit rewards program and the Aave Savings Rate (ASR).
+   * The sGHO APY is an annualized rate derived from the weekly distribution schedule.
+   * Rewards accrue continuously in the background, but they become claimable only after each round.
    * 
-   * TODO: Replace this with one of these integrations:
-   * 1. Query the Aave Savings Rate (ASR) smart contract on-chain
-   *    Contract: (need to find ASR contract address)
-   *    Method: getRate() or similar
-   * 
-   * 2. Call a separate Aave API endpoint for global sGHO stats
-   *    Example: https://api.aave.com/sgho/stats (if available)
-   * 
-   * 3. Calculate from Merit rewards distribution
-   *    Use userMeritRewards query with proper integration
-   * 
-   * Until proper integration is implemented, returns N/A.
+   * This method queries the Aave GraphQL API for the current yield rate.
    */
   private async fetchSGHOAPY(): Promise<string> {
     try {
-      // TODO: Implement real-time APY fetching from:
-      // - Aave Savings Rate (ASR) contract
-      // - Merit rewards API
-      // - Or other official source
-      
-      // Return N/A until proper integration is implemented
-      return 'N/A';
+      const client = new GraphQLClient(AAVE_GRAPHQL_API, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      interface SavingsGhoYieldRateResponse {
+        savingsGhoYieldRate: {
+          raw: string;
+          decimals: number;
+          value: string;
+          formatted: string;
+        };
+      }
+
+      const response = await client.request<SavingsGhoYieldRateResponse>(
+        QUERIES.getSavingsGhoYieldRate,
+        {
+          chainId: this.chainId,
+        }
+      );
+
+      // Return the formatted APY (e.g., "7.18%")
+      return response.savingsGhoYieldRate.formatted;
     } catch (error) {
       console.error('Error fetching sGHO APY:', error);
+      // If the query fails (e.g., not available on this chain), return N/A
       return 'N/A';
+    }
+  }
+
+  /**
+   * Get user's claimable Merit rewards from sGHO
+   * Returns the amount of rewards that can be claimed
+   */
+  async getMeritRewards(userAddress: string): Promise<{
+    claimableAmount: string;
+    claimableUSD: string;
+  } | null> {
+    try {
+      // Merit rewards are only available on Ethereum Mainnet
+      if (this.chainId !== 1) {
+        return null;
+      }
+
+      const client = new GraphQLClient(AAVE_GRAPHQL_API, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      interface UserMeritRewardsResponse {
+        userMeritRewards: {
+          claimableRewards: {
+            amount: {
+              raw: string;
+              value: string;
+              decimals: number;
+            };
+            usd: string;
+          };
+        };
+      }
+
+      const response = await client.request<UserMeritRewardsResponse>(
+        QUERIES.getUserMeritRewards,
+        {
+          userAddress: userAddress.toLowerCase(),
+          chainId: this.chainId,
+        }
+      );
+
+      return {
+        claimableAmount: response.userMeritRewards.claimableRewards.amount.value,
+        claimableUSD: response.userMeritRewards.claimableRewards.usd,
+      };
+    } catch (error) {
+      console.error('Error fetching Merit rewards:', error);
+      return null;
     }
   }
 
@@ -342,7 +400,7 @@ export class AaveSubgraphService {
       // Fetch sGHO (Savings GHO) balance and APY
       let savingsBalance = '0';
       let savingsBalanceUSD = '0';
-      let savingsAPY = 'N/A'; // APY from Merit program - N/A until proper integration
+      let savingsAPY = 'N/A';
       
       try {
         // Only fetch on Ethereum Mainnet (sGHO only on mainnet)
@@ -352,14 +410,9 @@ export class AaveSubgraphService {
             savingsBalance = savingsResponse.amount.value || '0';
             savingsBalanceUSD = savingsResponse.usd || '0';
             
-            // NOTE: sGHO APY is NOT available in the Aave GraphQL API
-            // It comes from the Merit rewards program
-            // TODO: Integrate with:
-            // 1. Aave Savings Rate (ASR) contract for real-time APY
-            // 2. Or use Merit rewards distribution rate
-            // 3. Or call a separate Aave API endpoint for global sGHO stats
-            // 
-            // For now, returns N/A
+            // Fetch sGHO APY from Aave API
+            // This is an annualized rate derived from the weekly distribution schedule
+            // Rewards accrue continuously but are claimable after each round
             savingsAPY = await this.fetchSGHOAPY();
           }
         }
